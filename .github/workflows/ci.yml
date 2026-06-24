@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  no-api-key-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: python examples/no_api_key_example.py
+        env:
+          OPENAI_API_KEY: ""
+          USE_MOCK_PIPELINE: "true"
+
+  library-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: ruff check pipeline tests examples
+      - run: black --check pipeline tests examples
+      - run: pytest tests/ --cov=pipeline -q
+        env:
+          OPENAI_API_KEY: ""
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - run: npx tsc --noEmit
+      - run: npm run build
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [no-api-key-test, library-checks, frontend-checks]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build
