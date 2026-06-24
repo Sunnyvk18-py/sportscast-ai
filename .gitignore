@@ -25,13 +25,12 @@ ENV/
 *.db
 *.sqlite3
 node_modules/
-dist/
 .clips/
 .clips/*
 !clips/.gitkeep
 segments/*
 !segments/.gitkeep
-*.ts
+segments/*.ts
 *.m3u8
 *.wav
 *.mp4
