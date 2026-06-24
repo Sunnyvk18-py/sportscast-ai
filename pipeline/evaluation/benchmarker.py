@@ -4,14 +4,79 @@ import logging
 
 from pipeline.evaluation.labeled_clips import LabeledClip
 from pipeline.evaluation.metrics import BenchmarkResult
-from pipeline.testing.mock_pipeline import MockPipeline
+from pipeline.fusion.signal_fuser import SignalFuser
+from pipeline.kafka.schemas import AudioEvent, VisionEvent
+from pipeline.speech.commentary_parser import CommentaryParser
 
 logger = logging.getLogger(__name__)
+
+_BENCHMARK_TRANSCRIPTS: dict[str, str] = {
+    "goal": "Oh what a goal! The striker scores!",
+    "foul": "Clear foul there, the referee blows the whistle.",
+    "corner": "Corner kick awarded on the far side.",
+    "yellow_card": "Yellow card shown by the referee.",
+    "red_card": "Red card! He's sent off!",
+    "substitution": "Substitution — fresh legs coming on.",
+}
+
+_EVENT_CONFIDENCE: dict[str, float] = {
+    "goal": 0.91,
+    "foul": 0.82,
+    "corner": 0.72,
+    "yellow_card": 0.58,
+    "red_card": 0.85,
+    "substitution": 0.72,
+}
+
+_AUDIO_ENERGY: dict[str, float] = {
+    "goal": 0.85,
+    "foul": 0.55,
+    "corner": 0.50,
+    "yellow_card": 0.45,
+    "red_card": 0.65,
+    "substitution": 0.62,
+}
 
 
 class OfflineBenchmarker:
     def __init__(self, labeled_dataset: list[LabeledClip] | None = None):
         self.labeled_dataset = labeled_dataset or []
+
+    async def _fuse_labeled_events(self, events_config: list[dict]) -> list:
+        fuser = SignalFuser()
+        parser = CommentaryParser()
+        detected = []
+
+        for spec in events_config:
+            timestamp_ms = spec["timestamp_ms"]
+            event_type = spec["type"]
+            segment_id = f"seg_{timestamp_ms // 1000:03d}"
+            confidence = _EVENT_CONFIDENCE.get(event_type, 0.7)
+
+            vision = VisionEvent(
+                timestamp_ms=timestamp_ms,
+                segment_id=segment_id,
+                detected_event_type=event_type,
+                confidence=confidence,
+                model_used="benchmark",
+            )
+            transcript = _BENCHMARK_TRANSCRIPTS.get(event_type, "")
+            speech = parser.parse(transcript, timestamp_ms, segment_id)
+            energy = _AUDIO_ENERGY.get(event_type, 0.5)
+            audio = AudioEvent(
+                timestamp_ms=timestamp_ms,
+                segment_id=segment_id,
+                energy_level=energy,
+                crowd_state="roar" if energy > 0.7 else "ambient",
+                classifier_confidence=0.75,
+                mfcc_features=[0.1 * i for i in range(13)],
+            )
+
+            fused = await fuser.fuse_all(vision, speech, audio)
+            if fused and fused.composite_confidence >= 0.45:
+                detected.append(fused)
+
+        return detected
 
     async def run_benchmark(self) -> BenchmarkResult:
         all_detected = []
@@ -26,18 +91,9 @@ class OfflineBenchmarker:
                 {"timestamp_ms": e["timestamp_ms"], "type": e["event_type"]}
                 for e in clip.ground_truth_events
             ]
-            max_ts = max((e["timestamp_ms"] for e in clip.ground_truth_events), default=60000)
-            pipeline = MockPipeline(
-                duration_seconds=max(max_ts // 1000 + 5, 10),
-                events_to_simulate=events_config,
-                commentary_enabled=False,
-            )
-
-            detected_in_clip = []
-            async for event in pipeline.run():
-                if event.composite_confidence >= 0.45:
-                    detected_in_clip.append(event)
-                    agreements.append(event.signals_agreed)
+            detected_in_clip = await self._fuse_labeled_events(events_config)
+            for event in detected_in_clip:
+                agreements.append(event.signals_agreed)
 
             for gt in clip.ground_truth_events:
                 all_ground_truth.append(gt)

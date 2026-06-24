@@ -7,15 +7,18 @@ Thank you for your interest in contributing!
 ```bash
 git clone https://github.com/Sunnyvk18-py/sportscast-ai
 cd sportscast-ai
-pip install -e ".[dev,dashboard]"
+pip install -e ".[dev,dashboard,speech]"
 ```
+
+Set `OPENAI_API_KEY` in `.env` to run the real pipeline locally.
 
 ## Running Tests
 
 ```bash
 pytest tests/ --cov=pipeline
-python examples/no_api_key_example.py
 ```
+
+Unit tests use synthetic signals and do not call external APIs.
 
 ## Code Style
 
@@ -26,9 +29,5 @@ python examples/no_api_key_example.py
 
 1. Fork the repository
 2. Create a feature branch
-3. Ensure CI passes (no API keys required)
+3. Ensure CI passes
 4. Submit a pull request with a clear description
-
-## Mock Pipeline First
-
-All tests and CI run without API keys. Use `MockPipeline` and mock detectors for new features before integrating real models.

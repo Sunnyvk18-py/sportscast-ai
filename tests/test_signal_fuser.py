@@ -2,17 +2,33 @@
 
 import pytest
 
-from pipeline.audio.classifier import CrowdNoiseClassifier
 from pipeline.fusion.signal_fuser import SignalFuser
-from pipeline.speech.mock_transcriber import MockWhisperTranscriber
-from pipeline.vision.mock_detector import MockVisionDetector
+from pipeline.kafka.schemas import AudioEvent, SpeechEvent, VisionEvent
 
 
 @pytest.mark.asyncio
 async def test_fuse_all_goal():
-    vision = await MockVisionDetector().detect_event("", "seg", 41000, event_type="goal")
-    speech = await MockWhisperTranscriber().transcribe_segment("", "seg", 41000, event_type="goal")
-    audio = CrowdNoiseClassifier().create_mock_event("seg", 41000, "goal")
+    vision = VisionEvent(
+        timestamp_ms=41000,
+        segment_id="seg",
+        detected_event_type="goal",
+        confidence=0.91,
+    )
+    speech = SpeechEvent(
+        timestamp_ms=41000,
+        segment_id="seg",
+        transcript="Oh what a goal!",
+        detected_event_type="goal",
+        commentary_confidence=0.85,
+    )
+    audio = AudioEvent(
+        timestamp_ms=41000,
+        segment_id="seg",
+        energy_level=0.85,
+        crowd_state="roar",
+        classifier_confidence=0.88,
+        mfcc_features=[0.1 * i for i in range(13)],
+    )
 
     fuser = SignalFuser()
     fused = await fuser.fuse_all(vision, speech, audio)

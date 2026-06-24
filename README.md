@@ -3,48 +3,42 @@
 > Real-time multimodal sports event intelligence pipeline.
 > Vision + Speech + Audio → Fused events → AI commentary → Highlight clips.
 
-## Quickstart (no API keys)
+## Quickstart
 
 ```bash
 git clone https://github.com/Sunnyvk18-py/sportscast-ai
 cd sportscast-ai
-pip install -e .
-python examples/no_api_key_example.py
-```
+pip install -e ".[dashboard,speech]"
 
-Output:
-
-```
-[00:08] FOUL         | Confidence: 82% | Signals: 3/3 | ✅ AUTO-CONFIRMED
-  💬 Referee blows the whistle — that's a clear foul in midfield.
-
-[00:23] CORNER       | Confidence: 71% | Signals: 2/3 | ✅ AUTO-CONFIRMED
-  💬 Corner kick awarded, the winger races to place the ball.
-
-[00:41] GOAL         | Confidence: 94% | Signals: 3/3 | ✅ AUTO-CONFIRMED
-  💬 GOAL! The striker finds the back of the net!
-
-[00:55] YELLOW_CARD  | Confidence: 58% | Signals: 2/3 | ⚠️  NEEDS REVIEW
-  💬 Yellow card shown — the referee has made his decision.
-```
-
-## With real models
-
-```bash
 # Add to .env:
-OPENAI_API_KEY=sk-...
-USE_MOCK_PIPELINE=false
-python examples/recorded_match_example.py --url "https://youtube.com/..."
+# OPENAI_API_KEY=sk-...
+
+# Optional: start dashboard
+docker compose up -d
+
+# Process a YouTube link, stream, or local video file
+python examples/live_stream_example.py --url "https://youtube.com/watch?v=..."
 ```
+
+Requires **FFmpeg** on your PATH. Set `OPENAI_API_KEY` for GPT-4o Vision and Whisper API. For local Whisper: `pip install -e ".[speech]"`.
 
 ## Dashboard
 
 ```bash
 pip install -e ".[dashboard]"
-docker-compose up
+docker compose up
 ```
 
-Open http://localhost:3000
+Open http://localhost:3000 — events appear live as the pipeline runs.
+
+## CLI
+
+```bash
+python -m pipeline --url "https://youtube.com/watch?v=..."
+python examples/recorded_match_example.py --url "/path/to/match.mp4"
+```
+
+Flags: `--no-dashboard`, `--no-clips`, `--name "My Match"`
 
 ## Architecture
 

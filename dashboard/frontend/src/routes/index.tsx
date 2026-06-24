@@ -18,7 +18,7 @@ export default function LiveDashboard() {
   const startMatch = async () => {
     setCreating(true);
     try {
-      await api.createMatch("Live Match", "mock://pipeline");
+      await api.createMatch("Live Match", "stream://pending");
     } finally {
       setCreating(false);
     }

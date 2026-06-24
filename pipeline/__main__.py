@@ -1,4 +1,4 @@
-"""Live stream / video URL — full real pipeline."""
+"""SportsCast AI CLI — pass a stream or video URL to run the real pipeline."""
 
 import asyncio
 

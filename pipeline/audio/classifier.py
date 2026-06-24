@@ -78,18 +78,3 @@ class CrowdNoiseClassifier:
                 mfcc_features=[0.0] * 13,
                 processing_ms=int((time.perf_counter() - start) * 1000),
             )
-
-    def create_mock_event(
-        self, segment_id: str, timestamp_ms: int, event_type: str | None = None
-    ) -> AudioEvent:
-        crowd_state, confidence, energy = self.heuristic.classify_for_event(event_type)
-        return AudioEvent(
-            event_id=str(uuid4()),
-            timestamp_ms=timestamp_ms,
-            segment_id=segment_id,
-            energy_level=energy,
-            crowd_state=crowd_state,
-            classifier_confidence=confidence,
-            mfcc_features=[0.1 * i for i in range(13)],
-            processing_ms=50,
-        )

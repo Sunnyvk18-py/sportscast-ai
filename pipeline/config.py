@@ -8,7 +8,6 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
-    USE_MOCK_PIPELINE: bool = True
     USE_LLAVA: bool = False
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
     TOPIC_VISION_EVENTS: str = "sportscast.vision"

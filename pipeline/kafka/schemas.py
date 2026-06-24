@@ -18,7 +18,7 @@ class VisionEvent(BaseModel):
     detected_event_type: str | None = None
     confidence: float = 0.0
     raw_response: str = ""
-    model_used: str = "mock"
+    model_used: str = "unknown"
     processing_ms: int = 0
 
 

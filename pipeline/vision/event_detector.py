@@ -114,15 +114,20 @@ class LLaVAEventDetector:
 
             self._pipe = pipeline("image-to-text", model=self.model)
         except Exception as exc:
-            logger.warning("LLaVA model load failed, will use mock: %s", exc)
+            logger.warning("LLaVA model load failed: %s", exc)
 
     async def detect_event(
         self, frame_path: str, segment_id: str, timestamp_ms: int
     ) -> VisionEvent:
         if self._pipe is None:
-            from pipeline.vision.mock_detector import MockVisionDetector
-
-            return await MockVisionDetector().detect_event(frame_path, segment_id, timestamp_ms)
+            return VisionEvent(
+                timestamp_ms=timestamp_ms,
+                segment_id=segment_id,
+                frame_path=frame_path,
+                detected_event_type=None,
+                confidence=0.0,
+                model_used=self.model,
+            )
 
         start = time.perf_counter()
         try:

@@ -13,7 +13,7 @@ export default function EventFeed({ events }: Props) {
   if (events.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-8 text-center text-foreground/50">
-        Waiting for live events… Connect the pipeline or run the mock demo.
+        Waiting for live events… Run the pipeline with a video URL to see live detections.
       </div>
     );
   }

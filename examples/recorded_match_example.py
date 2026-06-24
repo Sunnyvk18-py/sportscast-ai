@@ -1,13 +1,12 @@
-"""Recorded match example — yt-dlp + real models."""
+"""Recorded match — full pipeline from YouTube or file URL."""
 
 import argparse
 import asyncio
 import logging
-import os
 
+from pipeline.cli_output import print_event
 from pipeline.config import settings
-from pipeline.ingestor.video_ingestor import VideoIngestor
-from pipeline.testing.mock_pipeline import MockPipeline
+from pipeline.runner import SportsCastPipeline
 
 logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
@@ -15,31 +14,20 @@ logger = logging.getLogger(__name__)
 
 async def main():
     parser = argparse.ArgumentParser(description="SportsCast AI — Recorded Match")
-    parser.add_argument("--url", required=True, help="YouTube or video URL")
-    parser.add_argument("--mock", action="store_true", help="Use mock pipeline")
+    parser.add_argument("--url", required=True, help="YouTube or video URL / local path")
+    parser.add_argument("--no-dashboard", action="store_true", help="Skip dashboard POST")
+    parser.add_argument("--no-clips", action="store_true", help="Skip clip generation")
+    parser.add_argument("--name", default="Recorded Match", help="Match name")
     args = parser.parse_args()
 
-    os.makedirs(settings.SEGMENTS_DIR, exist_ok=True)
-
-    if args.mock or settings.USE_MOCK_PIPELINE:
-        logger.info("Running mock pipeline (no API keys)")
-        pipeline = MockPipeline(
-            duration_seconds=60,
-            events_to_simulate=[
-                {"timestamp_ms": 8000, "type": "foul"},
-                {"timestamp_ms": 41000, "type": "goal"},
-            ],
-        )
-        async for event in pipeline.run():
-            print(f"{event.event_type}: {event.composite_confidence:.0%}")
-        return
-
-    ingestor = VideoIngestor(args.url, settings.SEGMENTS_DIR, settings.SEGMENT_DURATION)
-    video_path = ingestor.download_video()
-    logger.info("Downloaded: %s", video_path)
-
-    async for segment in ingestor.segment_to_hls(video_path):
-        logger.info("Segment ready: %s", segment)
+    pipeline = SportsCastPipeline(
+        source_url=args.url,
+        match_name=args.name,
+        post_to_dashboard=not args.no_dashboard,
+        generate_clips=not args.no_clips,
+    )
+    async for event in pipeline.run():
+        print_event(event)
 
 
 if __name__ == "__main__":

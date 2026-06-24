@@ -14,7 +14,6 @@ class SportsCastConsumer:
         self.group_id = group_id
         self.available = False
         self._consumer = None
-        self._producer_memory: list[tuple[str, dict]] = []
 
         try:
             from confluent_kafka import Consumer
@@ -29,7 +28,7 @@ class SportsCastConsumer:
             self._consumer.subscribe(topics)
             self.available = True
         except Exception as exc:
-            logger.warning("Kafka consumer unavailable, using mock events: %s", exc)
+            logger.warning("Kafka consumer unavailable: %s", exc)
 
     async def consume(
         self,
@@ -37,7 +36,7 @@ class SportsCastConsumer:
         stop_event: asyncio.Event,
     ) -> None:
         if not self.available or self._consumer is None:
-            await self._mock_consume(callback, stop_event)
+            await self._idle_until_stop(stop_event)
             return
 
         loop = asyncio.get_event_loop()
@@ -62,24 +61,7 @@ class SportsCastConsumer:
         except Exception:
             pass
 
-    async def _mock_consume(
-        self,
-        callback: Callable[[str, dict], Awaitable[None]],
-        stop_event: asyncio.Event,
-    ) -> None:
-        logger.info("Running mock Kafka consumer (demo mode)")
-        demo_count = 0
+    async def _idle_until_stop(self, stop_event: asyncio.Event) -> None:
+        logger.warning("Kafka unavailable — consumer idle until stopped")
         while not stop_event.is_set():
-            await asyncio.sleep(2)
-            if stop_event.is_set():
-                break
-            demo_count += 1
-            if demo_count > 5:
-                continue
-            await callback(
-                "sportscast.fused",
-                {
-                    "type": "heartbeat",
-                    "message": "mock consumer alive",
-                },
-            )
+            await asyncio.sleep(1)

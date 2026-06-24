@@ -39,7 +39,7 @@ class SignalFuser:
         speech: SpeechEvent,
         audio: AudioEvent,
     ) -> FusedEvent | None:
-        """Direct fusion of aligned signals (used by mock pipeline)."""
+        """Direct fusion of aligned signals."""
         event_type = self._dominant_event_type(vision, speech, audio)
         if not event_type or event_type == "none":
             return None
